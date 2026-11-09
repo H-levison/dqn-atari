@@ -1,0 +1,18 @@
+[project]
+name = "dqn-atari-pong"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "ale-py",
+    "gymnasium",
+    "matplotlib",
+    "numpy",
+    "opencv-python",
+    "pandas",
+    "torch",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+]
