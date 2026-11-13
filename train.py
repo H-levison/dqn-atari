@@ -33,14 +33,18 @@ def build_networks(n_actions, device):
 
     Returns (online_net, target_net).
     """
-    # TODO (Anthony)
-    raise NotImplementedError
+    # The online network learns; the target network provides stable targets.
+    online_net = DQN(n_actions).to(device)
+    target_net = DQN(n_actions).to(device)
+    update_target(online_net, target_net)
+    target_net.eval()
+    return online_net, target_net
 
 
 def update_target(online_net, target_net):
     """Copy the online weights into the target network."""
-    # TODO (Anthony)
-    raise NotImplementedError
+    # Keep the target network synchronized at fixed intervals.
+    target_net.load_state_dict(online_net.state_dict())
 
 
 def learn(online_net, target_net, buffer, optimizer, batch_size, gamma, device):
@@ -52,8 +56,29 @@ def learn(online_net, target_net, buffer, optimizer, batch_size, gamma, device):
 
     Returns the loss as a float.
     """
-    # TODO (Anthony)
-    raise NotImplementedError
+    states, actions, rewards, next_states, dones = buffer.sample(batch_size)
+
+    states = torch.as_tensor(states, device=device)
+    actions = torch.as_tensor(actions, dtype=torch.long, device=device)
+    rewards = torch.as_tensor(rewards, dtype=torch.float32, device=device)
+    next_states = torch.as_tensor(next_states, device=device)
+    dones = torch.as_tensor(dones, dtype=torch.float32, device=device)
+
+    # Select the Q-value for the action taken in each transition.
+    predicted_q = online_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+
+    # Do not calculate gradients through the target network.
+    with torch.no_grad():
+        next_q = target_net(next_states).max(1).values
+        target_q = rewards + gamma * next_q * (1 - dones)
+
+    loss = torch.nn.functional.mse_loss(predicted_q, target_q)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    return float(loss.item())
 
 
 def train(args):
@@ -62,16 +87,56 @@ def train(args):
     Resets the environment, selects an action, stores the transition, learns
     once the buffer has warmed up, decays epsilon, syncs the target network
     periodically, writes one CSV row per episode, and saves the model.
-
-    The pieces you need are already here:
-        get_epsilon(step, args.eps_start, args.eps_end, args.eps_decay)
-        select_action(state, online_net, epsilon, n_actions, device)
-        log_file, writer = start_log(args.out)   # one row per episode
-        writer.writerow([episode, step, reward, length, epsilon, loss])
-        torch.save(online_net.state_dict(), Path(args.out) / "model.pth")
     """
-    # TODO (Anthony)
-    raise NotImplementedError
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    env = make_env(args.seed)
+    n_actions = env.action_space.n
+
+    online_net, target_net = build_networks(n_actions, device)
+    optimizer = torch.optim.Adam(online_net.parameters(), lr=args.lr)
+    buffer = ReplayBuffer(args.buffer_size)
+    log_file, writer = start_log(args.out)
+
+    state, _ = env.reset(seed=args.seed)
+    episode = 0
+    episode_reward = 0.0
+    episode_length = 0
+    loss = 0.0
+
+    for step in range(1, args.steps + 1):
+        if step <= args.warmup:
+            action = env.action_space.sample()
+        else:
+            epsilon = get_epsilon(step, args.eps_start, args.eps_end, args.eps_decay)
+            action = select_action(state, online_net, epsilon, n_actions, device)
+
+        next_state, reward, terminated, truncated, _ = env.step(action)
+        done = terminated or truncated
+        buffer.add(state, action, reward, next_state, done)
+
+        state = next_state
+        episode_reward += reward
+        episode_length += 1
+
+        if step > args.warmup and step % args.learn_every == 0 and len(buffer) >= args.batch_size:
+            loss = learn(online_net, target_net, buffer, optimizer, args.batch_size, args.gamma, device)
+
+        if step % args.target_sync == 0:
+            update_target(online_net, target_net)
+
+        if done:
+            episode += 1
+            epsilon = get_epsilon(step, args.eps_start, args.eps_end, args.eps_decay)
+            writer.writerow([episode, step, episode_reward, episode_length, epsilon, loss])
+            log_file.flush()
+
+            state, _ = env.reset()
+            episode_reward = 0.0
+            episode_length = 0
+
+    torch.save(online_net.state_dict(), Path(args.out) / "model.pth")
+    log_file.close()
+    env.close()
 
 
 # --- HonourGod: action selection, epsilon decay, CLI, logging --------------
