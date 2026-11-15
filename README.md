@@ -89,8 +89,63 @@ so the agent cannot memorise one fixed sequence of moves.
 
 ## Results
 
-<!-- TODO (HonourGod): training plots for the best run, plus episode length,
-     number of steps and rewards. -->
+Our best agent is experiment 9 from Alliane's sweep, saved as `dqn_model.pth`.
+It was trained with:
+
+```bash
+uv run train.py --lr 1e-4 --gamma 0.99 --batch-size 128 \
+                --eps-start 1.0 --eps-end 0.01 --eps-decay 200000 \
+                --steps 400000 --buffer-size 50000 --seed 0 \
+                --out experiments/Alliane/exp09
+```
+
+![Training curves for the best run](experiments/Alliane/exp09/log.png)
+
+### Training performance
+
+| | Start of training | End of training |
+| --- | --- | --- |
+| **Reward** (100-episode average) | -19.97 | **-15.74** |
+| **Episode length** (50-episode average) | 918 steps | **2,805 steps** |
+| **Number of steps** | 400,000 environment steps over 230 episodes | |
+
+A random agent scores about -21, so the reward shows real learning rather than
+noise. The 100-episode average first rose above -20 at step 101,471 and kept
+climbing to the end of the budget, which means training was still improving
+when it stopped.
+
+Episode length is the clearer signal. A Pong episode ends when one side reaches
+21 points, so a longer game means more of the ball being returned instead of
+missed. Games grew three times longer, from 918 to 2,805 steps.
+
+### Evaluation
+
+Training averages include some exploration, so we also measured the saved model
+playing greedily through `play.py` over ten fixed seeds:
+
+| Model | Mean score | Median | Best | Worst |
+| --- | --- | --- | --- | --- |
+| **Alliane exp09** (saved as `dqn_model.pth`) | **-10.10** | -10.5 | -6 | **-13** |
+| HonourGod exp10 | -11.20 | -14.0 | -1 | -20 |
+| HonourGod exp03 | -14.70 | -14.5 | -10 | -18 |
+
+We picked exp09 over exp10 for consistency rather than for its average. The two
+means are within each other's error, and exp10 reached the better training
+average (-14.39) and the only winning game of the project (+8). But across ten
+greedy episodes exp10 ranged from -1 to -20 while exp09 stayed between -6 and
+-13. A model that trains to a better average does not necessarily play more
+reliably, and for a single demonstration the steadier agent is the better
+choice.
+
+### What limits the result
+
+400,000 steps is a small budget for Pong — the original DQN paper trains for
+tens of millions of frames, and agents usually need 1 to 2 million steps before
+they score positively on average. We chose 400,000 so that all three of us
+could run ten experiments each on the hardware we had, which made the
+hyperparameter comparison the point of the project rather than the final score.
+The reward curve had not flattened at 400,000 steps, so a longer run with the
+same configuration would be expected to keep improving.
 
 Per-member experiment tables are in the `*Hyperparameter_experiment_results.md`
 files at the root of this repository.
