@@ -277,6 +277,30 @@ win. It also scores slightly higher playing greedily (+12.30) than it did in
 training (+10.78), which is what we would expect once the last 1% of random
 actions is removed.
 
+### Did it actually learn? Two controls
+
+A score of +12 only means something against a reference, so we ran two policies
+that have definitely not learned anything, on the same ten seeds:
+
+| Policy | Mean score | Best | Worst | Mean game length |
+| --- | --- | --- | --- | --- |
+| Random actions | -20.20 | -19 | -21 | 956 steps |
+| Untrained network, played greedily | -21.00 | -21 | -21 | 761 steps |
+| **Trained agent** (`dqn_model.pth`) | **+12.30** | +18 | +7 | **2,632 steps** |
+
+The second row is the one that matters. It is the same network, the same
+`choose_greedy_action()` code path and the same seeds as the trained agent, with
+only the weights different — randomly initialised instead of trained. It loses
+21-0 on every seed. So the 33-point gap is the learned weights, not the network
+shape, the frame preprocessing or a lucky choice of seeds.
+
+It is also worth noting that the untrained network is *worse* than acting
+randomly. An untrained network returns nearly the same Q-value for all six
+actions, so `argmax` keeps returning the same one: the paddle picks a direction,
+reaches the edge and stays there. Its games are the shortest of the three, which
+is what a paddle that never moves looks like. Random actions at least jog the
+paddle around and block the occasional ball.
+
 ### What we learned from this
 
 The three 400,000-step sweeps are the controlled part of this project: each of
