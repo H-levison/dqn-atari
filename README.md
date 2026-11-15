@@ -80,12 +80,142 @@ so the agent cannot memorise one fixed sequence of moves.
 
 ## DQN architecture
 
-<!-- TODO (Anthony): diagram of the network, and the online/target pair. -->
+### The Q-network
+
+One network maps a stack of 4 frames to one Q-value per action. The layer sizes
+are the same as the 2015 DQN Nature paper. It is defined in `network.py` and
+nothing is pretrained.
+
+```
+input: state (4, 84, 84) uint8          4 stacked grayscale frames, pixels 0-255
+   |
+   |  divide by 255.0                   done inside forward(), so the buffer
+   v                                    can keep frames as 1-byte integers
+ (4, 84, 84) float
+   |
+   |  Conv2d(4 -> 32, kernel 8, stride 4) + ReLU
+   v
+ (32, 20, 20)
+   |
+   |  Conv2d(32 -> 64, kernel 4, stride 2) + ReLU
+   v
+ (64, 9, 9)
+   |
+   |  Conv2d(64 -> 64, kernel 3, stride 1) + ReLU
+   v
+ (64, 7, 7)
+   |
+   |  Flatten
+   v
+ 3136
+   |
+   |  Linear(3136 -> 512) + ReLU
+   v
+ 512
+   |
+   |  Linear(512 -> 6)
+   v
+output: 6 Q-values, one per action
+```
+
+| Layer | Shape | Parameters |
+| --- | --- | --- |
+| Conv2d(4 -> 32, k8, s4) | (32, 20, 20) | 8,224 |
+| Conv2d(32 -> 64, k4, s2) | (64, 9, 9) | 32,832 |
+| Conv2d(64 -> 64, k3, s1) | (64, 7, 7) | 36,928 |
+| Linear(3136 -> 512) | 512 | 1,606,144 |
+| Linear(512 -> 6) | 6 | 3,078 |
+| **Total** | | **1,687,206** |
+
+The three convolutions shrink the image while growing the number of feature
+maps: the first picks up coarse shapes and motion, the last works on a 7x7 grid
+of higher-level features. The fully connected layers then turn those features
+into a score for each of the 6 actions. Most of the parameters (95%) are in the
+first linear layer, because it connects all 3,136 flattened features to 512
+units.
+
+### The online and target networks
+
+We build two copies of this network, which is what `build_networks()` in
+`train.py` does:
+
+```
+   state s                                   next state s'
+      |                                            |
+      v                                            v
+ +--------------+                           +--------------+
+ | online Q     |  <-- trained every        | target Q     |  <-- frozen, no
+ | network      |      4 steps              | network      |      gradients
+ +--------------+                           +--------------+
+      |                                            |
+      v                                            v
+ Q(s, a) for the                            max Q(s', a') used in
+ action we took                              the Bellman target
+      |                                            |
+      +------------------>  loss  <----------------+
+
+ every 1,000 steps: copy the online weights into the target network
+```
+
+Only the online network learns. The target network is a snapshot of it, used to
+produce the values we regress towards. Without it, the network is chasing a
+target that moves every time it updates, which makes training unstable: the
+prediction and the thing it is predicting shift together and the errors can
+grow instead of shrink. Freezing the target for 1,000 steps gives the online
+network a fixed goal to move towards.
 
 ## How training works
 
-<!-- TODO (Anthony): replay buffer, epsilon-greedy, the Bellman target,
-     the loss, and when the target network is synced. -->
+The loop lives in `train()` in `train.py`. One pass through it does five things.
+
+**1. Choose an action (ε-greedy).** `get_epsilon()` returns the current
+exploration rate, which falls in a straight line from `--eps-start` to
+`--eps-end` over `--eps-decay` steps and stays there. `select_action()` then
+draws a random number: below ε it picks a random action, otherwise it runs the
+state through the online network and takes the action with the highest Q-value.
+Early in training ε is near 1, so the agent is almost entirely exploring; later
+it is near 0.01 and mostly exploiting what it has learned. The first 10,000
+steps (`--warmup`) are fully random, to fill the buffer before learning starts.
+
+**2. Store the transition.** The action is sent to the environment, and the
+resulting `(state, action, reward, next_state, done)` tuple is written to the
+replay buffer. `ReplayBuffer` is a fixed-size ring buffer of 50,000
+transitions; when it is full, each new transition overwrites the oldest one.
+Frames are kept as `uint8` rather than `float32`, which uses a quarter of the
+memory — at 50,000 transitions it holds about 2.8 GB.
+
+**3. Sample a batch and compute the Bellman target.** Every 4 steps
+(`--learn-every`), `learn()` draws a random batch of transitions. Sampling
+randomly is the point of the replay buffer: consecutive frames of Pong are
+almost identical, so training on them in order would mean every batch is
+highly correlated and the network would overfit to whatever it is doing right
+now. A random batch mixes old and new experience together.
+
+For each sampled transition the online network predicts the Q-value of the
+action that was actually taken, and the target network supplies the value of
+the best action in the next state:
+
+```
+target = reward + gamma * max_a' Q_target(next_state, a') * (1 - done)
+```
+
+The `(1 - done)` term matters: if the episode ended on that transition there is
+no next state, so the target is just the reward.
+
+**4. Compute the loss and backpropagate.** The loss is the mean squared error
+between the predicted Q-values and those targets. `optimizer.zero_grad()`
+clears the previous gradients, `loss.backward()` computes new ones, and
+`optimizer.step()` updates the online network with Adam at the learning rate
+from `--lr`. The target network is wrapped in `torch.no_grad()`, so no
+gradients flow through it.
+
+**5. Sync the target network.** Every 1,000 steps (`--target-sync`),
+`update_target()` copies the online network's weights into the target network
+with `load_state_dict()`.
+
+At the end of each episode one row is written to `log.csv` — episode number,
+step, total reward, episode length, ε and the latest loss — and the trained
+weights are saved to `model.pth` when the step budget runs out.
 
 ## Results
 
