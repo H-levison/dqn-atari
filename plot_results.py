@@ -4,8 +4,8 @@ Expected CSV columns (one row per episode):
     episode, step, reward, length, epsilon, loss
 
 Usage:
-    uv run plot_results.py Alliane/exp03.csv
-    uv run plot_results.py Alliane/exp03.csv --out plots/best_experiment.png
+    uv run plot_results.py experiments/Alliane/exp09/log.csv
+    uv run plot_results.py experiments/Alliane/exp09/log.csv --out best_experiment.png
 """
 
 import argparse
