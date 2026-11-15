@@ -40,15 +40,27 @@ on its own it cannot show which of the two produced the gain. What it does show
 is that the two findings compound rather than cancel: the schedule gain from
 experiment 3 survives the larger batch.
 
-Experiment 10 is **not** the model we submitted as `dqn_model.pth`. Playing
-greedily through `play.py` over ten fixed seeds, it averaged -11.20 but ranged
+Experiment 10 is **not** the model we submitted as `dqn_model.pth`. Played
+greedily through `play.py` over ten fixed seeds it averaged -11.20 but ranged
 from -1 to -20, while Alliane's experiment 9 averaged -10.10 within a much
-narrower -6 to -13. The two averages are within each other's error, so the
-deciding factor was consistency, and the group chose her model for the live
-demonstration. The lesson I took from this is that a better training average
-does not guarantee more reliable greedy play — the training average still
-carries the 1% exploration, and a single run's final 100 episodes is a noisy
-estimate of how a policy will behave.
+narrower -6 to -13 — the two averages are within each other's error, so the
+deciding factor was consistency rather than the mean.
+
+That comparison was then overtaken. We ran the group's agreed configuration
+(batch 128 from Alliane, gamma 0.99 from Anthony, my epsilon floor of 0.01) for
+2,000,000 steps instead of 400,000, and that run is what we submitted: it
+averages +10.78 in training and +12.30 across the same ten greedy seeds, winning
+all ten. My experiment 10 remains the best of my own 400,000-step sweep.
+
+Two things I take from this. The first is that a better training average does
+not guarantee more reliable greedy play — experiment 10 beat Alliane's
+experiment 9 on the training average and lost to it on consistency, because the
+training average still carries the 1% exploration floor and a single run's final
+100 episodes is a noisy estimate of a policy. The second is larger: at 400,000
+steps every run in my sweep was still improving when the budget ran out, so the
+ordering I measured is an ordering of *early* learning speed. It told us which
+configuration to spend the long run on, which is what it was for. It does not
+tell us where any of those runs would have finished.
 
 The pattern across the whole sweep is that **the step where a run crossed -20
 predicts where it finished**, almost in order:
