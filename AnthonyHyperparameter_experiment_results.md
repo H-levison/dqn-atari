@@ -18,11 +18,6 @@
 | 9 | 1e-4 | 0.99 | 64 | 1.0 | 0.01 | 200000 | Best run by far, -11.4 over only 282 episodes, the longest rallies of any experiment. Stable the entire way through, no divergence at all. Gamma=0.99 plus the big batch was clearly the right combo. |
 | 10 | 1e-4 | 0.999 | 32 | 1.0 | 0.01 | 200000 | Pushed gamma to 0.999 and got -15.2 over 276 episodes. Better than the gamma=0.99 runs with batch 16 or 32, worse than the batch=64 ones. The higher gamma didn't cause any instability, loss stayed normal. |
 
-Fill in each row as the run finishes, not at the end. Write what actually
-happened in the last column — "diverged, Q-values past 100 by 80k steps,
-reward stuck at -21" rather than "performed poorly". That column is what you
-will be questioned on.
-
 ## Best configuration
 
 Experiment 9 (gamma=0.99, batch_size=64) won, and it wasn't close: -11.4 mean reward, well ahead of everything else. The same pattern shows up at every gamma I tested, batch 64 came out on top each time (exp03: -16.0, exp06: -13.3, exp09: -11.4). So batch size looks like the real driver here, a bigger batch means less noisy gradient estimates. Gamma=0.99 on top of that just pushed it a bit further. Nothing unstable happened during this run, epsilon decayed the way it should and the loss stayed flat the whole time.
