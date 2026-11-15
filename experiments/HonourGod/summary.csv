@@ -1,0 +1,10 @@
+experiment,eps_start,eps_end,eps_decay,tests,minutes,final_reward
+exp01,1.0,0.01,200000,baseline reference,37.8,-18.3
+exp02,1.0,0.01,50000,fast decay,39.0,-21.0
+exp03,1.0,0.01,20000,"very fast decay, little exploration",49.1,-14.7
+exp04,1.0,0.01,350000,"slow decay, barely finishes in budget",45.9,-18.2
+exp05,1.0,0.1,200000,high exploration floor,48.0,-18.3
+exp06,1.0,0.2,200000,"very high floor, never stops exploring",47.4,-19.9
+exp07,1.0,0.001,200000,near-zero floor,49.8,-16.5
+exp08,0.5,0.01,200000,low start,51.3,-16.6
+exp09,0.1,0.01,200000,almost greedy from the first step,52.9,-16.5

@@ -4,6 +4,10 @@ __pycache__/
 .ipynb_checkpoints/
 smoke_test/
 
+# Console output from the experiment runner. The CSV logs are the real record.
+*.log
+*.err
+
 # OS
 .DS_Store
 Thumbs.db
