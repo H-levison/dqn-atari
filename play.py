@@ -2,7 +2,7 @@
 
 Usage:
     uv run play.py
-    uv run play.py --model Alliane/exp03.pth --episodes 5
+    uv run play.py --model experiments/Alliane/exp09/model.pth --episodes 5
 """
 
 import argparse

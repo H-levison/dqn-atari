@@ -3,13 +3,16 @@
 A Deep Q-Network implemented from scratch in PyTorch and trained to play
 `ALE/Pong-v5`. No Stable-Baselines3, RLlib, CleanRL or TorchRL.
 
-> Skeleton. Each section is filled in by its owner — see the task allocation.
-
 ## Group members
 
-- Alliane
-- Anthony
-- HonourGod
+| Member | What they built | Experiments |
+| --- | --- | --- |
+| Alliane Umutoniwase | Environment and preprocessing (`environment.py`), the CNN (`network.py`), the replay buffer (`replay_buffer.py`), `play.py`, `plot_results.py`, the gameplay video, README environment section | Learning rate and batch size |
+| Anthony Ariik Mathiang Ariik | Online and target networks, the Bellman update and loss (`learn`), the training loop in `train.py`, README architecture and training sections | Gamma and batch size |
+| Honourgod Kilechukwu Levison | Repository and uv setup, epsilon-greedy and epsilon decay, command-line flags, CSV logging, the final 2M-step run, README results section | Epsilon schedule |
+
+The full split of tasks is in `Task allocation sheet.pdf`. The brief lists four
+results files, but our group has three members, so there are three.
 
 ## The environment
 
@@ -339,9 +342,9 @@ To watch it live, run `uv run play.py`.
 This project uses [uv](https://docs.astral.sh/uv/). Do not use pip.
 
 ```bash
-uv sync            # create the environment from pyproject.toml / uv.lock
-uv run train.py    # train (see --help for the hyperparameters)
-uv run play.py     # watch the trained agent play
+uv sync                                # create the environment from pyproject.toml / uv.lock
+uv run train.py --out experiments/test # train one run (see --help for the hyperparameters)
+uv run play.py                         # watch dqn_model.pth play
 ```
 
 ## Repository layout
