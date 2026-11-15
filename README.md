@@ -11,8 +11,12 @@ A Deep Q-Network implemented from scratch in PyTorch and trained to play
 | Anthony Ariik Mathiang Ariik | Online and target networks, the Bellman update and loss (`learn`), the training loop in `train.py`, README architecture and training sections | Gamma and batch size |
 | Honourgod Kilechukwu Levison | Repository and uv setup, epsilon-greedy and epsilon decay, command-line flags, CSV logging, the final 2M-step run, README results section | Epsilon schedule |
 
-The full split of tasks is in `Task allocation sheet.pdf`. The brief lists four
-results files, but our group has three members, so there are three.
+The full split of tasks, with the meeting attendance log, is in the group task
+sheet at the root of this repository:
+`Team Task Sheet_[Machine_Learning_Techniques_II-Formative 3 Assignment_Cohort 1_Group_22] - 1.pdf`
+
+The brief lists four results files, but our group has three members, so there
+are three.
 
 ## The environment
 
@@ -358,5 +362,5 @@ experiments/<Name>/                        their models, logs and plots
 *Hyperparameter_experiment_results.md      one table per member
 dqn_model.pth                              the final trained model
 gameplay.mp4                               video of the final agent playing
-Task allocation sheet.pdf                  who did what
+'Team Task Sheet_[...]-Group_22] - 1.pdf'   who did what, and the meeting log
 ```
