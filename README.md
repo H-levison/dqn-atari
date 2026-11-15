@@ -219,66 +219,86 @@ weights are saved to `model.pth` when the step budget runs out.
 
 ## Results
 
-Our best agent is experiment 9 from Alliane's sweep, saved as `dqn_model.pth`.
-It was trained with:
+Our final agent **wins**: it averages **+10.78** points per game over its last 100
+training episodes, against about -21 for random play. It is saved as
+`dqn_model.pth`.
+
+The hyperparameters are the ones our three sweeps agreed on — Alliane's batch
+size of 128, Anthony's gamma of 0.99, and the group's learning rate of 1e-4 —
+trained for 2,000,000 steps instead of the 400,000 each experiment used:
 
 ```bash
 uv run train.py --lr 1e-4 --gamma 0.99 --batch-size 128 \
                 --eps-start 1.0 --eps-end 0.01 --eps-decay 200000 \
-                --steps 400000 --buffer-size 50000 --seed 0 \
-                --out experiments/Alliane/exp09
+                --steps 2000000 --buffer-size 50000 --seed 0 \
+                --out experiments/final_run
 ```
 
-![Training curves for the best run](experiments/Alliane/exp09/log.png)
+![Training curves for the final run](experiments/final_run/log.png)
 
 ### Training performance
 
 | | Start of training | End of training |
 | --- | --- | --- |
-| **Reward** (100-episode average) | -19.97 | **-15.74** |
-| **Episode length** (50-episode average) | 918 steps | **2,805 steps** |
-| **Number of steps** | 400,000 environment steps over 230 episodes | |
+| **Reward** (100-episode average) | -20.08 | **+10.78** |
+| **Episode length** (50-episode average) | 923 steps | **2,703 steps** |
+| **Number of steps** | 2,000,000 environment steps over 798 episodes | |
 
-A random agent scores about -21, so the reward shows real learning rather than
-noise. The 100-episode average first rose above -20 at step 101,471 and kept
-climbing to the end of the budget, which means training was still improving
-when it stopped.
+The agent passes three milestones on the way up. The 100-episode average rose
+above -20, better than random, at step **101,273**. It reached **0**, winning as
+many points as it lost, at step **826,648**. It passed **+10** at step
+**1,647,641** and finished at +10.78, with the last ten episodes averaging
++10.9. Its best game was **+19** — 21 points to 2. It won 440 of its 798
+episodes outright.
 
-Episode length is the clearer signal. A Pong episode ends when one side reaches
-21 points, so a longer game means more of the ball being returned instead of
-missed. Games grew three times longer, from 918 to 2,805 steps.
+Episode length tells the same story from the other side. A Pong episode ends
+when one side reaches 21, so a longer game means more rallies and fewer missed
+balls. Games grew from 923 steps to 2,703.
+
+The loss fell steadily across the four quarters of training (0.0069, 0.0054,
+0.0040, 0.0033) with no divergence and no sign of the constant-Q collapse that
+appeared in some of our shorter runs.
 
 ### Evaluation
 
-Training averages include some exploration, so we also measured the saved model
-playing greedily through `play.py` over ten fixed seeds:
+Training averages still include the 1% exploration floor, so we also measured
+the saved model playing greedily through `play.py` over ten fixed seeds. We ran
+the same ten seeds on our best 400,000-step models for comparison:
 
-| Model | Mean score | Median | Best | Worst |
-| --- | --- | --- | --- | --- |
-| **Alliane exp09** (saved as `dqn_model.pth`) | **-10.10** | -10.5 | -6 | **-13** |
-| HonourGod exp10 | -11.20 | -14.0 | -1 | -20 |
-| HonourGod exp03 | -14.70 | -14.5 | -10 | -18 |
+| Model | Steps | Mean score | Median | Best | Worst |
+| --- | --- | --- | --- | --- | --- |
+| **Final run** (saved as `dqn_model.pth`) | 2,000,000 | **+12.30** | +12.5 | +18 | **+7** |
+| Alliane exp09 | 400,000 | -10.10 | -10.5 | -6 | -13 |
+| HonourGod exp10 | 400,000 | -11.20 | -14.0 | -1 | -20 |
+| HonourGod exp03 | 400,000 | -14.70 | -14.5 | -10 | -18 |
 
-We picked exp09 over exp10 for consistency rather than for its average. The two
-means are within each other's error, and exp10 reached the better training
-average (-14.39) and the only winning game of the project (+8). But across ten
-greedy episodes exp10 ranged from -1 to -20 while exp09 stayed between -6 and
--13. A model that trains to a better average does not necessarily play more
-reliably, and for a single demonstration the steadier agent is the better
-choice.
+The final agent won all ten episodes, and its worst game was still a seven-point
+win. It also scores slightly higher playing greedily (+12.30) than it did in
+training (+10.78), which is what we would expect once the last 1% of random
+actions is removed.
 
-### What limits the result
+### What we learned from this
 
-400,000 steps is a small budget for Pong — the original DQN paper trains for
-tens of millions of frames, and agents usually need 1 to 2 million steps before
-they score positively on average. We chose 400,000 so that all three of us
-could run ten experiments each on the hardware we had, which made the
-hyperparameter comparison the point of the project rather than the final score.
-The reward curve had not flattened at 400,000 steps, so a longer run with the
-same configuration would be expected to keep improving.
+The three 400,000-step sweeps are the controlled part of this project: each of
+us varied one axis and held everything else fixed, which is what makes those
+results comparable. None of those thirty runs scored better than -11.
+
+The final run changes only the step budget, and it crosses from losing to
+winning. Every one of our 400,000-step curves was still climbing when the budget
+ran out, and we said so in our individual write-ups — this run is the
+confirmation. The gap between -11 and +12 was not a hyperparameter we had failed
+to find. It was training time.
+
+That is also the honest limit of what a sweep at 400,000 steps can tell you. Our
+tuning conclusions still hold at 2,000,000 steps, because the configuration we
+chose came out of them. But the *ranking* of two configurations early in
+training is not a safe guide to where either one ends up, and a single run per
+configuration cannot separate a real effect from an unlucky initialisation.
+Several seeds per configuration would be the next thing to do with more compute.
 
 Per-member experiment tables are in the `*Hyperparameter_experiment_results.md`
 files at the root of this repository.
+
 
 ## Gameplay demonstration
 
