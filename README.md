@@ -326,7 +326,13 @@ files at the root of this repository.
 
 ## Gameplay demonstration
 
-<!-- TODO (Alliane): video of the best trained agent playing. -->
+[Watch the video: our agent playing one game of Pong](gameplay.mp4)
+
+The video shows `dqn_model.pth` playing one full game of Pong with greedy
+actions (no exploration), at real game speed. Our agent is the green paddle on
+the right and wins 21-10.
+
+To watch it live, run `uv run play.py`.
 
 ## Running it
 
@@ -348,5 +354,6 @@ experiments/<Name>/experiments.ipynb       that member's 10 runs
 experiments/<Name>/                        their models, logs and plots
 *Hyperparameter_experiment_results.md      one table per member
 dqn_model.pth                              the final trained model
+gameplay.mp4                               video of the final agent playing
 Task allocation sheet.pdf                  who did what
 ```
